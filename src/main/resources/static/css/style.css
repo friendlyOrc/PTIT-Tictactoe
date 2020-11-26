@@ -1,0 +1,22 @@
+.login{
+    position: absolute;
+    width: 20%;
+    margin: 0 auto;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    border-radius: 1vw;
+    border: 1px solid #707070;
+    padding: 2vw;
+}
+.main{
+    position: absolute;
+    width: 70%;
+    margin: 0 auto;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    border-radius: 1vw;
+    border: 1px solid #707070;
+    padding: 2vw;
+}

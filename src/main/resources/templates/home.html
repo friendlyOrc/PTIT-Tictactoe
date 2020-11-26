@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" xmlns:th="http://www.thymeleaf.org">
+
+<div th:insert="/head::head">  </div>
+
+<body>
+  <div class="main">
+    <div class="row">
+      <div class="col-12 d-flex justify-content-between">
+        <h1>TicTacToe Online</h1>
+        <div>
+          <span>Hello <span th:text="${session.account.name}"></span></span> <br>
+          <span>Your point: <span th:text="${session.account.point}"></span></span> <br>
+          <a href="">Log out</a>
+        </div>
+      </div>
+    </div>
+  </div>
+  
+</body>
+
+</html>
