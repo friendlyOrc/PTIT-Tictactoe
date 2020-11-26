@@ -9,9 +9,9 @@
       <div class="col-12 d-flex justify-content-between">
         <h1>TicTacToe Online</h1>
         <div>
-          <span>Hello <span th:text="${session.account.name}" id="name"></span></span> <br>
+          <span>Hello <span th:text="${session.account.name}" id="name">ádasd</span></span> <br>
           <span>Your point: <span th:text="${session.account.point}"></span></span> <br>
-          <a href="/logout">Log out</a>
+          <a href="/logout" id="disconnect">Log out</a>
         </div>
       </div>
     </div>
@@ -44,31 +44,18 @@
   </div>
 
 </body>
-<script>
+<script th:inline="javascript">
   var stompClient = null;
-
-  function setConnected(connected) {
-    $("#connect").prop("disabled", connected);
-    $("#disconnect").prop("disabled", !connected);
-    if (connected) {
-      $("#conversation").show();
-    }
-    else {
-      $("#conversation").hide();
-    }
-    $("#greetings").html("");
-  }
 
   function connect() {
     var socket = new SockJS('/ttt-websocket');
     stompClient = Stomp.over(socket);
     stompClient.connect({}, function (frame) {
-      setConnected(true);
       console.log('Connected: ' + frame);
-      stompClient.subscribe('/topic/greetings', function (greeting) {
-        showGreeting(JSON.parse(greeting.body).content);
+      stompClient.subscribe('/login/new', function (greeting) {
+        resetAccountList(greeting);
       });
-      sendName();
+      newLogin();
     });
   }
 
@@ -80,20 +67,25 @@
     console.log("Disconnected");
   }
 
-  function sendName() {
-    stompClient.send("/app/hello", {}, JSON.stringify({ 'name': $("#name").val() }));
+  function newLogin() {
+    let id = /*[[${session.account.id}]]*/;
+    stompClient.send("/app/hello", {}, id);
   }
 
-  function showGreeting(message) {
-    $("#greetings").append("<tr><td>" + message + "</td></tr>");
+  function resetAccountList(greeting) {
+    let accList = JSON.parse(greeting.body);
+    document.getElementById("greetings").innerHTML = ' ';
+    for(i in accList){
+      $("#greetings").append(`<tr><td>${accList[i].id}</td><td>${accList[i].name}</td></tr>`);
+    }
   }
-  // $(document).ready(function () {
-  //   $("form").on('submit', function (e) {
-  //     e.preventDefault();
-  //   });
-  //   connect();
-  //   // $("#disconnect").click(function () { disconnect(); });
-  // });
+  $(document).ready(function () {
+    $("form").on('submit', function (e) {
+      e.preventDefault();
+    });
+    connect();
+    $("#disconnect").click(function () { newLogin(); });
+  });
 </script>
 
 </html>

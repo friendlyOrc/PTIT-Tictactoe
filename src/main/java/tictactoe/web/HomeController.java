@@ -28,16 +28,17 @@ public class HomeController {
     @GetMapping("/")
     public String login(Model model, HttpSession session) {
 
-        if(session.getAttribute("account") != null){
+        if (session.getAttribute("account") != null) {
             return "redirect:/home";
         }
         model.addAttribute("account", new Account());
         model.addAttribute("page", "Login");
         return "login";
     }
+
     @GetMapping("/home")
     public String home(Model model, HttpSession session) {
-        if(session.getAttribute("account") == null){
+        if (session.getAttribute("account") == null) {
             return "redirect:/";
         }
         Account temp = (Account) session.getAttribute("account");
@@ -47,9 +48,11 @@ public class HomeController {
         model.addAttribute("page", "Home");
         return "home";
     }
+
     @GetMapping("logout")
     public String logOut(Model model, HttpSession session) {
-        
+        Account temp = (Account) session.getAttribute("account");
+        accRepo.offline(temp.getId());
         session.removeAttribute("account");
         return "redirect:/";
     }
