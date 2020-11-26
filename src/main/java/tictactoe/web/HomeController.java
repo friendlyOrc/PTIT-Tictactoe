@@ -26,11 +26,32 @@ public class HomeController {
     }
 
     @GetMapping("/")
-    public String home(Model model) {
-        // System.out.println("==========> " + myVariable);
+    public String login(Model model, HttpSession session) {
+
+        if(session.getAttribute("account") != null){
+            return "redirect:/home";
+        }
         model.addAttribute("account", new Account());
         model.addAttribute("page", "Login");
         return "login";
+    }
+    @GetMapping("/home")
+    public String home(Model model, HttpSession session) {
+        if(session.getAttribute("account") == null){
+            return "redirect:/";
+        }
+        Account temp = (Account) session.getAttribute("account");
+        accRepo.online(temp.getId());
+        ArrayList<Account> online = accRepo.findActiveAccount();
+        session.setAttribute("online", online);
+        model.addAttribute("page", "Home");
+        return "home";
+    }
+    @GetMapping("logout")
+    public String logOut(Model model, HttpSession session) {
+        
+        session.removeAttribute("account");
+        return "redirect:/";
     }
 
     @PostMapping
@@ -38,9 +59,8 @@ public class HomeController {
 
         ArrayList<Account> accList = accRepo.findAccount(acc.getUsername(), acc.getPassword());
         if (accList.size() == 1) {
-            model.addAttribute("page", "Home");
             session.setAttribute("account", accList.get(0));
-            return "home";
+            return "redirect:/home";
         } else {
             model.addAttribute("page", "Login");
             model.addAttribute("msg", "Wrong username or password!");

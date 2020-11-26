@@ -3,7 +3,8 @@ create table if not exists `account`(
     `username` varchar(255),
     `password` varchar(255),
     `name` varchar(255),
-    `point` float
+    `point` float,
+    `status` int
 );
 create table if not exists `game`(
 	id int primary key auto_increment,
