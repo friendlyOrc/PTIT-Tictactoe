@@ -1,12 +1,16 @@
 package tictactoe.web;
 
+import java.security.Principal;
 import java.util.ArrayList;
 
 import javax.servlet.http.HttpSession;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.messaging.handler.annotation.Header;
 import org.springframework.messaging.handler.annotation.MessageMapping;
+import org.springframework.messaging.handler.annotation.Payload;
 import org.springframework.messaging.handler.annotation.SendTo;
+import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.util.HtmlUtils;
 
@@ -21,6 +25,8 @@ public class GreetingController {
   GreetingController(AccountRepository accRepo) {
     this.accRepo = accRepo;
   }
+  @Autowired
+  private SimpMessagingTemplate simpMessagingTemplate;
 
   @MessageMapping("/hello")
   @SendTo("/login/new")
@@ -28,7 +34,12 @@ public class GreetingController {
     Thread.sleep(1000); // simulated delay
     ArrayList<Account> accList = accRepo.findActiveAccount();
     System.out.println(accList);
-    // return new Message("Hello, " + HtmlUtils.htmlEscape(acc.getName()) + "!");
     return accList;
+  }
+  
+  @MessageMapping("/invite") 
+  public void sendSpecific(String id) throws Exception { 
+    System.out.println(id);
+    simpMessagingTemplate.convertAndSend("/login/" + id, "Hello"); 
   }
 }
