@@ -4,31 +4,12 @@
 <div th:insert="/head::head"> </div>
 
 <body>
-<!-- Button trigger modal -->
-<button type="button" class="btn btn-primary" data-toggle="modal" data-target="#exampleModalCenter">
-  Launch demo modal
-</button>
-
-<!-- Modal -->
-<div class="modal fade" id="exampleModalCenter" tabindex="-1" role="dialog" aria-labelledby="exampleModalCenterTitle" aria-hidden="true">
-  <div class="modal-dialog modal-dialog-centered" role="document">
-    <div class="modal-content">
-      <div class="modal-header">
-        <h5 class="modal-title" id="exampleModalLongTitle">Modal title</h5>
-        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
-          <span aria-hidden="true">&times;</span>
-        </button>
-      </div>
-      <div class="modal-body">
-        ...
-      </div>
-      <div class="modal-footer">
-        <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
-        <button type="button" class="btn btn-primary">Save changes</button>
-      </div>
-    </div>
+  <div class="invitation hidden">
+    <p>You have an invitation from <span id="invi__name"></span></p>
+    <button type="button" class="btn btn-success">Accept</button>
+    <button type="button" class="btn btn-danger">Decline</button>
   </div>
-</div>
+
 
   <div class="main">
     <div class="row">
@@ -79,7 +60,7 @@
       });
       let id = /*[[${session.account.id}]]*/;
       stompClient.subscribe('/login/' + id, function (msgOut) {
-          console.log(msgOut);
+          showInvite(msgOut);
       });
       newLogin();
     });
@@ -101,8 +82,10 @@
   function resetAccountList(greeting) {
     let accList = JSON.parse(greeting.body);
     document.getElementById("greetings").innerHTML = ' ';
+    let id = /*[[${session.account.id}]]*/;
+    let name = /*[[${session.account.name}]]*/;
     for(i in accList){
-      $("#greetings").append(`<tr><td>${accList[i].id}</td><td>${accList[i].name}</td><td><button onclick="challenge(${accList[i].id})">Challenge</button></td></tr>`);
+      $("#greetings").append(`<tr><td>${accList[i].id}</td><td>${accList[i].name}</td><td><button onclick="challenge(${id}, ${accList[i].id}, '${name}')">Challenge</button></td></tr>`);
     }
   }
   $(document).ready(function () {
@@ -112,8 +95,13 @@
     connect();
     $("#disconnect").click(function () { newLogin(); });
   });
-  function challenge(id){
-    stompClient.send("/app/invite", {}, id);
+  function challenge(id1, id2, name){
+    stompClient.send("/app/invite", {}, id1 + " " + id2 + " " + name);
+  }
+  function showInvite(msg){
+    let temp = msg.body.split(" ");
+    $('.invitation').removeClass('hidden');
+    document.getElementById("invi__name").innerHTML = temp[1];
   }
 </script>
 

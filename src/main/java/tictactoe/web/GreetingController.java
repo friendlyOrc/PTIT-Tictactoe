@@ -25,6 +25,7 @@ public class GreetingController {
   GreetingController(AccountRepository accRepo) {
     this.accRepo = accRepo;
   }
+
   @Autowired
   private SimpMessagingTemplate simpMessagingTemplate;
 
@@ -36,10 +37,11 @@ public class GreetingController {
     System.out.println(accList);
     return accList;
   }
-  
-  @MessageMapping("/invite") 
-  public void sendSpecific(String id) throws Exception { 
+
+  @MessageMapping("/invite")
+  public void sendSpecific(String id) throws Exception {
     System.out.println(id);
-    simpMessagingTemplate.convertAndSend("/login/" + id, "Hello"); 
+    String[] temp = id.split(" ");
+    simpMessagingTemplate.convertAndSend("/login/" + temp[1], temp[0] + " " + temp[2]);
   }
 }
