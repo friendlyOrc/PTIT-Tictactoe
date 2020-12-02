@@ -30,6 +30,7 @@ public class GameController {
     private final AccountRepository accRepo;
     private final GameRepository gameRepo;
     private static Map<Integer, Integer> gameList = new HashMap<Integer, Integer>();
+    private static Map<Integer, Integer> reList = new HashMap<Integer, Integer>();
 
     @Autowired
     private SimpMessagingTemplate simpMessagingTemplate;
@@ -151,6 +152,20 @@ public class GameController {
 
     @MessageMapping("/rematch")
     public void rematch(String msg) throws Exception {
-
+        String[] temp = msg.split(" ");
+        int id = (int) (gameRepo.count() + 1);
+        if (!reList.containsKey(id)) {
+            reList.put(id, 0);
+        }
+        int count = reList.get(id) + 1;
+        if (count > 2)
+            count = 2;
+        System.out.print("================" + count);
+        reList.replace(id, count);
+        if (count == 2) {
+            gameRepo.addNew(id, Integer.parseInt(temp[1]), Integer.parseInt(temp[2]));
+            simpMessagingTemplate.convertAndSend("/client/rematch/" + temp[0], id);
+            simpMessagingTemplate.convertAndSend("/client/rematch/" + temp[0], id);
+        }
     }
 }

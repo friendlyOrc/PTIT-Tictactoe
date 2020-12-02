@@ -90,8 +90,18 @@
             stompClient.subscribe('/client/result/' + gameId, function (msg) {
                 result(msg.body);
             });
+            stompClient.subscribe('/client/rematch/' + gameId, function (msg) {
+                enterGame(msg.body);
+            });
             ready();
         });
+    }
+    function enterGame(id) {
+        document.getElementById('enter').removeAttribute("disabled");
+        document.getElementById("enter").innerHTML = "The game is ready!";
+        document.getElementById('enter').innerHTML = "Let's go!!";
+        document.getElementById('enter').setAttribute("onclick",
+        `window.location.replace('/game?matchID=${id}');`);
     }
 
     function ready() {
@@ -188,6 +198,11 @@
     function rematch(){
         $('.rematch').addClass('hidden');
         $('.accept').removeClass('hidden');
+        let gameId = /*[[${session.game.id}]]*/ + 1;
+        let accId1 = /*[[${session.game.acc1.id}]]*/ ;
+        let accId2 = /*[[${session.game.acc2.id}]]*/ ;
+
+        stompClient.send("/app/rematch", {}, gameId + " " + accId1 + " " + accId2);
     }
 
     $(document).ready(function () {
