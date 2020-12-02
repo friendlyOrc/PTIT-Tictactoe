@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" xmlns:th="http://www.thymeleaf.org">
+
+<div th:insert="/head::head"> </div>
+
+<body>
+    <div class="invitation hidden">
+      <p><span id="invi__name"></span >wants a rematch!</p>
+      <button id="invite__accept" type="button" class="btn btn-success" onclick="">Accept</button>
+      <button id="invite__decline" type="button" class="btn btn-danger" onclick="">Decline</button>
+    </div>
+  
+    <div class="decline hidden">
+      <p id="noti"></p>
+      <button id="" type="button" class="btn btn-success" onclick="$('.decline').addClass('hidden');">OK</button>
+    </div>
+
+    <div class="rematch hidden">
+        <p id="rematchNoti"></p>
+        <button id="rematch" type="button" class="btn btn-success" onclick="rematch()">Continue?</button>
+        <button id="return" type="button" class="btn btn-success" onclick="window.location.replace('/');">Return</button>
+    </div>
+    
+    <div class="accept hidden">
+        <p id="acceptNoti"></p>
+        <button id="enter" type="button" class="btn btn-success" disabled>Waiting...</button>
+    </div>
+
+    <div class="game">
+        <div class="row">
+            <div class="col-3">
+                <div class="player">
+                    <p id="player1__name">Waiting the Player</p>
+                    <p>X</p>
+                </div>
+            </div>
+            <div class="col-6">
+                <div class="board">
+                    <table>
+                        <tr>
+                            <td><button class="board__btn" disabled></button></td>
+                            <td><button class="board__btn" disabled></button></td>
+                            <td><button class="board__btn" disabled></button></td>
+                        </tr>
+                        <tr>
+                            <td><button class="board__btn" disabled></button></td>
+                            <td><button class="board__btn" disabled></button></td>
+                            <td><button class="board__btn" disabled></button></td>
+                        </tr>
+                        <tr>
+                            <td><button class="board__btn" disabled></button></td>
+                            <td><button class="board__btn" disabled></button></td>
+                            <td><button class="board__btn" disabled></button></td>
+                        </tr>
+                    </table>
+                    <p id="turn">Waiting</p>
+                </div>
+            </div>
+            <div class="col-3">
+                <div class="player">
+                    <p id="player2__name">Waiting the Player</p>
+                    <p>O</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+
+<script th:inline="javascript">
+    var stompClient = null;
+
+    function connect() {
+        var socket = new SockJS('/ttt-websocket');
+        stompClient = Stomp.over(socket);
+
+        let gameId = /*[[${session.game.id}]]*/ ;
+        let id = /*[[${session.account.id}]]*/ ;
+
+        stompClient.connect({}, function (frame) {
+            console.log('Connected: ' + frame);
+            stompClient.subscribe('/client/game/' + gameId, function (msg) {
+                turn(msg.body);
+            });
+            stompClient.subscribe('/client/game/' + gameId + "/" + id, function (msg) {
+                enter(msg.body);
+            });
+            stompClient.subscribe('/client/move/' + gameId, function (msg) {
+                turn(msg.body);
+            });
+            stompClient.subscribe('/client/result/' + gameId, function (msg) {
+                result(msg.body);
+            });
+            ready();
+        });
+    }
+
+    function ready() {
+        let gameId = /*[[${session.game.id}]]*/ ;
+        let id = /*[[${session.account.id}]]*/ ;
+        let name = /*[[${session.account.name}]]*/ ;
+
+        stompClient.send("/app/ready", {}, gameId + " " + id);
+    }
+
+    function turn(msg) {
+        let temp = msg.split(" ");
+        let id = temp[0];
+        console.log(temp[1]);
+        let thisId = /*[[${session.account.id}]]*/ ;
+        let accId1 = /*[[${session.game.acc1.id}]]*/ ;
+        let accId2 = /*[[${session.game.acc2.id}]]*/ ;
+
+        let name1 = /*[[${session.game.acc1.name}]]*/ ;
+        let name2 = /*[[${session.game.acc2.name}]]*/ ;
+        if (thisId == id) {
+            document.getElementById("turn").innerHTML = "Your turn";
+        } else {
+            if (accId1 == id) {
+                document.getElementById("turn").innerHTML = name1 + "'s turn";
+            } else {
+                document.getElementById("turn").innerHTML = name2 + "'s turn";
+            }
+        }
+        if (thisId == id) {
+            for (let i = 0; i < 9; i++) {
+                document.getElementsByClassName('board__btn')[i].setAttribute("onclick", `move(${id}, ${i + 1})`);
+                if (temp[1][i] != "-"){
+                    document.getElementsByClassName('board__btn')[i].innerHTML = temp[1][i];
+                } else{
+                    document.getElementsByClassName('board__btn')[i].removeAttribute("disabled");
+                }
+            }
+        } else {
+            for (let i = 0; i < 9; i++) {
+                document.getElementsByClassName('board__btn')[i].setAttribute("disabled", true);
+            }
+        }
+    }
+
+    function move(accId, pos) {
+        let rs = "";
+
+        let accId1 = /*[[${session.game.acc1.id}]]*/ ;
+        let accId2 = /*[[${session.game.acc2.id}]]*/ ;
+
+        if (accId == accId1) {
+            document.getElementsByClassName('board__btn')[pos - 1].innerHTML = "X";
+        } else {
+            document.getElementsByClassName('board__btn')[pos - 1].innerHTML = "O";
+        }
+
+        for (let i = 0; i < 9; i++) {
+            let val = document.getElementsByClassName('board__btn')[i].textContent;
+            document.getElementsByClassName('board__btn')[i].setAttribute("disabled", true);
+            rs += (val != "") ? val : "-";
+        }
+        console.log(rs);
+        let gameId = /*[[${session.game.id}]]*/ ;
+
+        if (accId == accId1) {
+            stompClient.send("/app/move", {}, gameId + " " + accId + " " + accId2 + " " + rs);
+        } else {
+            stompClient.send("/app/move", {}, gameId + " " + accId + " " + accId1 + " " + rs);
+        }
+    }
+
+    function result(id) {
+        document.getElementById("turn").innerHTML = "Finish";
+        for (let i = 0; i < 9; i++) {
+            document.getElementsByClassName('board__btn')[i].setAttribute("disabled", true);
+        }
+
+        let accId1 = /*[[${session.game.acc1.id}]]*/ ;
+        let accId2 = /*[[${session.game.acc2.id}]]*/ ;
+
+        let name1 = /*[[${session.game.acc1.name}]]*/ ;
+        let name2 = /*[[${session.game.acc2.name}]]*/ ;
+        if (id == accId1) {
+            document.getElementById("rematchNoti").innerHTML = name1 + " WINS!";
+        } else if(id == accId2) {
+            document.getElementById("rematchNoti").innerHTML = name2 + " WINS!";
+        }else{
+            document.getElementById("rematchNoti").innerHTML = "DRAW!";
+        }
+        $('.rematch').removeClass('hidden');
+    }
+
+    function rematch(){
+        $('.rematch').addClass('hidden');
+        $('.accept').removeClass('hidden');
+    }
+
+    $(document).ready(function () {
+        let name1 = /*[[${session.game.acc1.name}]]*/ ;
+        let name2 = /*[[${session.game.acc2.name}]]*/ ;
+        document.getElementById("player1__name").innerHTML = name1;
+        document.getElementById("player2__name").innerHTML = name2;
+        connect();
+    });
+</script>
+
+</html>

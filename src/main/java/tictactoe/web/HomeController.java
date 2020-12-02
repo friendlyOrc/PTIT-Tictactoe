@@ -36,6 +36,17 @@ public class HomeController {
         return "login";
     }
 
+    @GetMapping("/login")
+    public String loginRe(Model model, HttpSession session) {
+
+        if (session.getAttribute("account") != null) {
+            return "redirect:/home";
+        }
+        model.addAttribute("account", new Account());
+        model.addAttribute("page", "Login");
+        return "login";
+    }
+
     @GetMapping("/home")
     public String home(Model model, HttpSession session) {
         if (session.getAttribute("account") == null) {
@@ -43,13 +54,15 @@ public class HomeController {
         }
         Account temp = (Account) session.getAttribute("account");
         accRepo.online(temp.getId());
+        session.removeAttribute("account");
+        session.setAttribute("account", accRepo.findOneAccount(temp.getId()));
         ArrayList<Account> online = accRepo.findActiveAccount();
         session.setAttribute("online", online);
         model.addAttribute("page", "Home");
         return "home";
     }
 
-    @GetMapping("logout")
+    @GetMapping("/logout")
     public String logOut(Model model, HttpSession session) {
         Account temp = (Account) session.getAttribute("account");
         accRepo.offline(temp.getId());

@@ -29,4 +29,14 @@ public interface AccountRepository extends CrudRepository<Account, Long> {
     @Modifying
     @Query(value = "UPDATE `account` SET status = 0 WHERE id = ?1", nativeQuery = true)
     void offline(int id);
+
+    @Transactional
+    @Modifying
+    @Query(value = "UPDATE `account` SET point = point + 1 WHERE id = ?1", nativeQuery = true)
+    void win(int id);
+
+    @Transactional
+    @Modifying
+    @Query(value = "UPDATE `account` SET point = point + 0.5 WHERE id = ?1", nativeQuery = true)
+    void draw(int id);
 }

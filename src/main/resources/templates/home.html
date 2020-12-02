@@ -6,10 +6,19 @@
 <body>
   <div class="invitation hidden">
     <p>You have an invitation from <span id="invi__name"></span></p>
-    <button type="button" class="btn btn-success">Accept</button>
-    <button type="button" class="btn btn-danger">Decline</button>
+    <button id="invite__accept" type="button" class="btn btn-success" onclick="">Accept</button>
+    <button id="invite__decline" type="button" class="btn btn-danger" onclick="">Decline</button>
   </div>
 
+  <div class="decline hidden">
+    <p id="noti"></p>
+    <button id="" type="button" class="btn btn-success" onclick="$('.decline').addClass('hidden');">OK</button>
+  </div>
+
+  <div class="accept hidden">
+    <p id="acceptNoti"></p>
+    <button id="enter" type="button" class="btn btn-success">OK</button>
+  </div>
 
   <div class="main">
     <div class="row">
@@ -27,18 +36,18 @@
       <div class="col-5">
         <div class="row">
           <div class="col-md-12">
-              <table id="conversation" class="table table-striped">
-                  <thead>
-                  <tr>
-                      <th colspan="3">Online</th>
-                  </tr>
-                  </thead>
-                  <tbody id="greetings">
-                  </tbody>
-                  
-              </table>
+            <table class="table table-striped">
+              <thead>
+                <tr>
+                  <th colspan="3">Online</th>
+                </tr>
+              </thead>
+              <tbody id="greetings">
+              </tbody>
+
+            </table>
           </div>
-      </div>
+        </div>
       </div>
       <div class="col-7">
 
@@ -55,12 +64,19 @@
     stompClient = Stomp.over(socket);
     stompClient.connect({}, function (frame) {
       console.log('Connected: ' + frame);
-      stompClient.subscribe('/login/new', function (greeting) {
+      stompClient.subscribe('/client/new', function (greeting) {
         resetAccountList(greeting);
       });
-      let id = /*[[${session.account.id}]]*/;
-      stompClient.subscribe('/login/' + id, function (msgOut) {
-          showInvite(msgOut);
+      let id = /*[[${session.account.id}]]*/ ;
+      stompClient.subscribe('/client/invite/' + id, function (msgOut) {
+        showInvite(msgOut);
+      });
+
+      stompClient.subscribe('/client/decline/' + id, function (msgOut) {
+        showDecline(msgOut);
+      });
+      stompClient.subscribe('/client/accept/' + id, function (msgOut) {
+        enterGame(msgOut.body);
       });
       newLogin();
     });
@@ -75,17 +91,23 @@
   }
 
   function newLogin() {
-    let id = /*[[${session.account.id}]]*/;
-    stompClient.send("/app/hello", {}, id);
+    let id = /*[[${session.account.id}]]*/ ;
+    stompClient.send("/app/newlogin", {}, id);
   }
 
   function resetAccountList(greeting) {
     let accList = JSON.parse(greeting.body);
     document.getElementById("greetings").innerHTML = ' ';
-    let id = /*[[${session.account.id}]]*/;
-    let name = /*[[${session.account.name}]]*/;
-    for(i in accList){
-      $("#greetings").append(`<tr><td>${accList[i].id}</td><td>${accList[i].name}</td><td><button onclick="challenge(${id}, ${accList[i].id}, '${name}')">Challenge</button></td></tr>`);
+    let id = /*[[${session.account.id}]]*/ ;
+    let name = /*[[${session.account.name}]]*/ ;
+    for (i in accList) {
+      if (accList[i].id == id) {
+        $("#greetings").append(`<tr><td>${accList[i].id}</td><td>${accList[i].name}</td><td>You</td></tr>`);
+      } else {
+        $("#greetings").append(
+          `<tr><td>${accList[i].id}</td><td>${accList[i].name}</td><td><button onclick="challenge(${id}, ${accList[i].id}, '${name}')">Challenge</button></td></tr>`
+        );
+      }
     }
   }
   $(document).ready(function () {
@@ -93,14 +115,44 @@
       e.preventDefault();
     });
     connect();
-    $("#disconnect").click(function () { newLogin(); });
+    $("#disconnect").click(function () {
+      newLogin();
+    });
   });
-  function challenge(id1, id2, name){
+
+  function challenge(id1, id2, name) {
     stompClient.send("/app/invite", {}, id1 + " " + id2 + " " + name);
   }
-  function showInvite(msg){
+
+  function inviteAccept(id1, id2) {
+    stompClient.send("/app/invite/accept", {}, id1 + " " + id2);
+    $('.invitation').addClass('hidden');
+  }
+
+  function inviteDecline(id, name) {
+    stompClient.send("/app/invite/decline", {}, id + " " + name);
+    $('.invitation').addClass('hidden');
+  }
+
+  function showDecline(msg) {
+    document.getElementById("noti").innerHTML = msg.body + " has declined your invitation!";
+    $('.decline').removeClass('hidden');
+  }
+
+  function enterGame(id) {
+    document.getElementById("acceptNoti").innerHTML = "The game is ready!";
+    $('.accept').removeClass('hidden');
+    document.getElementById('enter').setAttribute("onclick",
+      `window.location.replace('/game?matchID=${id}');`);
+  }
+
+  function showInvite(msg) {
     let temp = msg.body.split(" ");
+    let id = /*[[${session.account.id}]]*/ ;
+    let name = /*[[${session.account.name}]]*/ ;
     $('.invitation').removeClass('hidden');
+    document.getElementById('invite__accept').setAttribute("onclick", `inviteAccept(${id}, '${temp[0]}')`);
+    document.getElementById('invite__decline').setAttribute("onclick", `inviteDecline(${temp[0]}, '${name}')`);
     document.getElementById("invi__name").innerHTML = temp[1];
   }
 </script>

@@ -16,21 +16,24 @@ import org.springframework.web.util.HtmlUtils;
 
 import tictactoe.Account;
 import tictactoe.data.AccountRepository;
+import tictactoe.data.GameRepository;
 
 @Controller
 public class GreetingController {
   private final AccountRepository accRepo;
+  private final GameRepository gameRepo;
 
   @Autowired
-  GreetingController(AccountRepository accRepo) {
+  GreetingController(AccountRepository accRepo, GameRepository gameRepo) {
     this.accRepo = accRepo;
+    this.gameRepo = gameRepo;
   }
 
   @Autowired
   private SimpMessagingTemplate simpMessagingTemplate;
 
-  @MessageMapping("/hello")
-  @SendTo("/login/new")
+  @MessageMapping("/newlogin")
+  @SendTo("/client/new")
   public ArrayList<Account> newLogin(String id) throws Exception {
     Thread.sleep(1000); // simulated delay
     ArrayList<Account> accList = accRepo.findActiveAccount();
@@ -42,6 +45,25 @@ public class GreetingController {
   public void sendSpecific(String id) throws Exception {
     System.out.println(id);
     String[] temp = id.split(" ");
-    simpMessagingTemplate.convertAndSend("/login/" + temp[1], temp[0] + " " + temp[2]);
+    simpMessagingTemplate.convertAndSend("/client/invite/" + temp[1], temp[0] + " " + temp[2]);
+  }
+
+  @MessageMapping("/invite/decline")
+  public void decline(String msg) throws Exception {
+    System.out.println(msg);
+    String[] temp = msg.split(" ");
+    simpMessagingTemplate.convertAndSend("/client/decline/" + temp[0], temp[1]);
+  }
+
+  @MessageMapping("/invite/accept")
+  public void accept(String msg) throws Exception {
+    System.out.println(msg);
+    String[] temp = msg.split(" ");
+
+    int gameID = (int) gameRepo.count() + 1;
+    gameRepo.addNew(gameID, Integer.parseInt(temp[0]), Integer.parseInt(temp[1]));
+
+    simpMessagingTemplate.convertAndSend("/client/accept/" + temp[0], gameID);
+    simpMessagingTemplate.convertAndSend("/client/accept/" + temp[1], gameID);
   }
 }
