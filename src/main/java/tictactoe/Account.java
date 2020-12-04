@@ -31,4 +31,6 @@ public class Account implements Serializable {
     private float point;
     @NotNull
     private String name;
+
+    private String status;
 }

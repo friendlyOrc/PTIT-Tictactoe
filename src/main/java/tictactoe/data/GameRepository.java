@@ -18,4 +18,9 @@ public interface GameRepository extends CrudRepository<Game, Long> {
 
     @Query(value = "SELECT * FROM `game` WHERE id = ?1 ", nativeQuery = true)
     ArrayList<Game> findGame(int id);
+
+    @Transactional
+    @Modifying
+    @Query(value = "UPDATE `game` SET result = ?1 WHERE id = ?2", nativeQuery = true)
+    void result(int rs, int id);
 }

@@ -12,13 +12,13 @@
   
     <div class="decline hidden">
       <p id="noti"></p>
-      <button id="" type="button" class="btn btn-success" onclick="$('.decline').addClass('hidden');">OK</button>
+      <button id="decline_btn" type="button" class="btn btn-success" onclick="$('.decline').addClass('hidden');">OK</button>
     </div>
 
     <div class="rematch hidden">
         <p id="rematchNoti"></p>
         <button id="rematch" type="button" class="btn btn-success" onclick="rematch()">Continue?</button>
-        <button id="return" type="button" class="btn btn-success" onclick="window.location.replace('/');">Return</button>
+        <button id="return" type="button" class="btn btn-success" onclick="quit()">Return</button>
     </div>
     
     <div class="accept hidden">
@@ -31,7 +31,7 @@
             <div class="col-3">
                 <div class="player">
                     <p id="player1__name">Waiting the Player</p>
-                    <p>X</p>
+                    <p>O</p>
                 </div>
             </div>
             <div class="col-6">
@@ -53,22 +53,25 @@
                             <td><button class="board__btn" disabled></button></td>
                         </tr>
                     </table>
+                    <p id="countdown"></p>
                     <p id="turn">Waiting</p>
                 </div>
             </div>
             <div class="col-3">
                 <div class="player">
                     <p id="player2__name">Waiting the Player</p>
-                    <p>O</p>
+                    <p>X</p>
                 </div>
             </div>
         </div>
+    <button type="button" class="btn btn-danger" onclick="quit()">QUIT</button>
     </div>
+    
 </body>
 
 <script th:inline="javascript">
     var stompClient = null;
-
+    var countdown = null;
     function connect() {
         var socket = new SockJS('/ttt-websocket');
         stompClient = Stomp.over(socket);
@@ -93,9 +96,19 @@
             stompClient.subscribe('/client/rematch/' + gameId, function (msg) {
                 enterGame(msg.body);
             });
+            stompClient.subscribe('/client/quit/' + gameId, function (msg) {
+                endGame();
+            });
             ready();
+            newLogin();
         });
     }
+
+    function newLogin() {
+        let id = /*[[${session.account.id}]]*/ ;
+        stompClient.send("/app/newlogin", {}, id);
+    }
+
     function enterGame(id) {
         document.getElementById('enter').removeAttribute("disabled");
         document.getElementById("enter").innerHTML = "The game is ready!";
@@ -116,6 +129,7 @@
         let temp = msg.split(" ");
         let id = temp[0];
         console.log(temp[1]);
+        let gameId = /*[[${session.game.id}]]*/ ;
         let thisId = /*[[${session.account.id}]]*/ ;
         let accId1 = /*[[${session.game.acc1.id}]]*/ ;
         let accId2 = /*[[${session.game.acc2.id}]]*/ ;
@@ -140,23 +154,53 @@
                     document.getElementsByClassName('board__btn')[i].removeAttribute("disabled");
                 }
             }
+            // Set the date we're counting down to
+            var countDownDate = new Date().getTime() + 16000;
+
+            // Update the count down every 1 second
+            countdown = setInterval(function() {
+
+                // Get today's date and time
+                var now = new Date().getTime();
+
+                // Find the distance between now and the count down date
+                var distance = countDownDate - now;
+
+                // Time calculations for days, hours, minutes and seconds
+                var seconds = Math.floor((distance % (1000 * 60)) / 1000);
+
+                // Display the result in the element with id="demo"
+                document.getElementById("countdown").innerHTML = seconds + "s ";
+
+                // If the count down is finished, write some text
+                if (distance < 0) {
+                    clearInterval(countdown);
+                    document.getElementById("countdown").innerHTML = "Waiting";
+                    stompClient.send("/app/surr", {}, gameId + " " + thisId);
+                }
+            }, 1000);
+
         } else {
             for (let i = 0; i < 9; i++) {
                 document.getElementsByClassName('board__btn')[i].setAttribute("disabled", true);
             }
         }
+        
     }
 
     function move(accId, pos) {
         let rs = "";
 
+        clearInterval(countdown);
+        document.getElementById("countdown").innerHTML = "";
+
         let accId1 = /*[[${session.game.acc1.id}]]*/ ;
         let accId2 = /*[[${session.game.acc2.id}]]*/ ;
 
         if (accId == accId1) {
-            document.getElementsByClassName('board__btn')[pos - 1].innerHTML = "X";
-        } else {
             document.getElementsByClassName('board__btn')[pos - 1].innerHTML = "O";
+        } else {
+            document.getElementsByClassName('board__btn')[pos - 1].innerHTML = "X";
         }
 
         for (let i = 0; i < 9; i++) {
@@ -174,7 +218,7 @@
         }
     }
 
-    function result(id) {
+    function result(rs) {
         document.getElementById("turn").innerHTML = "Finish";
         for (let i = 0; i < 9; i++) {
             document.getElementsByClassName('board__btn')[i].setAttribute("disabled", true);
@@ -185,9 +229,9 @@
 
         let name1 = /*[[${session.game.acc1.name}]]*/ ;
         let name2 = /*[[${session.game.acc2.name}]]*/ ;
-        if (id == accId1) {
+        if (rs == 1) {
             document.getElementById("rematchNoti").innerHTML = name1 + " WINS!";
-        } else if(id == accId2) {
+        } else if(rs == 2) {
             document.getElementById("rematchNoti").innerHTML = name2 + " WINS!";
         }else{
             document.getElementById("rematchNoti").innerHTML = "DRAW!";
@@ -203,6 +247,21 @@
         let accId2 = /*[[${session.game.acc2.id}]]*/ ;
 
         stompClient.send("/app/rematch", {}, gameId + " " + accId1 + " " + accId2);
+    }
+
+    function quit(){
+        let gameId = /*[[${session.game.id}]]*/ + 1;
+
+        stompClient.send("/app/quit", {}, gameId);
+        window.location.replace('/');
+    }
+
+    function endGame(){
+        $('.decline').removeClass('hidden');
+        $('.rematch').addClass('hidden');
+        document.getElementById("noti").innerHTML = "Your Opponent has left!";
+        document.getElementById('decline_btn').setAttribute("onclick",
+        `window.location.replace('/');`);
     }
 
     $(document).ready(function () {

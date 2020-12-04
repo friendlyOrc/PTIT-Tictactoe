@@ -102,11 +102,17 @@
     let name = /*[[${session.account.name}]]*/ ;
     for (i in accList) {
       if (accList[i].id == id) {
-        $("#greetings").append(`<tr><td>${accList[i].id}</td><td>${accList[i].name}</td><td>You</td></tr>`);
+        $("#greetings").append(`<tr><td>${accList[i].name}</td><td>${accList[i].point}</td><td>You</td></tr>`);
       } else {
-        $("#greetings").append(
-          `<tr><td>${accList[i].id}</td><td>${accList[i].name}</td><td><button onclick="challenge(${id}, ${accList[i].id}, '${name}')">Challenge</button></td></tr>`
-        );
+        if(accList[i].status == 1){
+          $("#greetings").append(
+            `<tr><td>${accList[i].name}</td><td>${accList[i].point}</td><td><button onclick="challenge(${id}, ${accList[i].id}, '${name}')">Challenge</button></td></tr>`
+          );
+        }else{
+          $("#greetings").append(
+            `<tr><td>${accList[i].name}</td><td>${accList[i].point}</td><td><button disabled>Busy</button></td></tr>`
+          );
+        }
       }
     }
   }
@@ -151,7 +157,7 @@
     let id = /*[[${session.account.id}]]*/ ;
     let name = /*[[${session.account.name}]]*/ ;
     $('.invitation').removeClass('hidden');
-    document.getElementById('invite__accept').setAttribute("onclick", `inviteAccept(${id}, '${temp[0]}')`);
+    document.getElementById('invite__accept').setAttribute("onclick", `inviteAccept('${temp[0]}', ${id})`);
     document.getElementById('invite__decline').setAttribute("onclick", `inviteDecline(${temp[0]}, '${name}')`);
     document.getElementById("invi__name").innerHTML = temp[1];
   }

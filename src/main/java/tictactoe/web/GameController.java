@@ -52,6 +52,9 @@ public class GameController {
         Game game = gameRepo.findGame(matchID).get(0);
         System.out.print("=====================" + game.getAcc1().getId() + "\n");
 
+        accRepo.busy(game.getAcc1().getId());
+        accRepo.busy(game.getAcc2().getId());
+
         session.setAttribute("game", game);
         model.addAttribute("account", (Account) session.getAttribute("account"));
         model.addAttribute("page", "Game");
@@ -71,7 +74,8 @@ public class GameController {
         System.out.print("================" + count);
         gameList.replace(Integer.parseInt(temp[0]), count);
         if (count == 2) {
-            simpMessagingTemplate.convertAndSend("/client/game/" + temp[0], temp[1] + " ---------");
+            Game game = gameRepo.findGame(Integer.parseInt(temp[0])).get(0);
+            simpMessagingTemplate.convertAndSend("/client/game/" + temp[0], game.getAcc2().getId() + " ---------");
         }
     }
 
@@ -137,17 +141,37 @@ public class GameController {
 
         System.out.print("===========WINNER==========" + win);
         simpMessagingTemplate.convertAndSend("/client/move/" + temp[0], temp[2] + " " + temp[3]);
-        if (win == 1) {
-            simpMessagingTemplate.convertAndSend("/client/result/" + temp[0], temp[1]);
-            accRepo.win(Integer.parseInt(temp[1]));
-        } else if (win == 2) {
-            simpMessagingTemplate.convertAndSend("/client/result/" + temp[0], temp[2]);
-            accRepo.win(Integer.parseInt(temp[2]));
-        } else if (win == 0) {
-            simpMessagingTemplate.convertAndSend("/client/result/" + temp[0], -1);
-            accRepo.draw(Integer.parseInt(temp[1]));
-            accRepo.draw(Integer.parseInt(temp[2]));
+        if (win != -1) {
+            Game game = gameRepo.findGame(Integer.parseInt(temp[0])).get(0);
+            gameRepo.result(win, game.getId());
+            if (win == 1) {
+                simpMessagingTemplate.convertAndSend("/client/result/" + temp[0], 2);
+                accRepo.win(game.getAcc2().getId());
+            } else if (win == 2) {
+                simpMessagingTemplate.convertAndSend("/client/result/" + temp[0], 1);
+                accRepo.win(game.getAcc1().getId());
+            } else if (win == 0) {
+                simpMessagingTemplate.convertAndSend("/client/result/" + temp[0], -1);
+                accRepo.draw(game.getAcc1().getId());
+                accRepo.draw(game.getAcc2().getId());
+            }
         }
+    }
+
+    @MessageMapping("/surr")
+    public void surr(String msg) throws Exception {
+        String[] temp = msg.split(" ");
+
+        Game game = gameRepo.findGame(Integer.parseInt(temp[0])).get(0);
+        int id = Integer.parseInt(temp[1]);
+        if (id == game.getAcc1().getId()) {
+            simpMessagingTemplate.convertAndSend("/client/result/" + temp[0], 2);
+            accRepo.win(game.getAcc2().getId());
+        } else {
+            simpMessagingTemplate.convertAndSend("/client/result/" + temp[0], 1);
+            accRepo.win(game.getAcc1().getId());
+        }
+
     }
 
     @MessageMapping("/rematch")
@@ -167,5 +191,12 @@ public class GameController {
             simpMessagingTemplate.convertAndSend("/client/rematch/" + temp[0], id);
             simpMessagingTemplate.convertAndSend("/client/rematch/" + temp[0], id);
         }
+    }
+
+    @MessageMapping("/quit")
+    public void quit(String gameId) throws Exception {
+
+        simpMessagingTemplate.convertAndSend("/client/quit/" + gameId, "end");
+
     }
 }

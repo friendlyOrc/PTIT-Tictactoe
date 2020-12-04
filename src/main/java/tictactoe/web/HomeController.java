@@ -1,86 +1,69 @@
 package tictactoe.web;
 
+import java.security.Principal;
 import java.util.ArrayList;
 
 import javax.servlet.http.HttpSession;
 
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.core.env.Environment;
+import org.springframework.messaging.handler.annotation.Header;
+import org.springframework.messaging.handler.annotation.MessageMapping;
+import org.springframework.messaging.handler.annotation.Payload;
+import org.springframework.messaging.handler.annotation.SendTo;
+import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Controller;
-import org.springframework.ui.Model;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.util.HtmlUtils;
 
 import tictactoe.Account;
 import tictactoe.data.AccountRepository;
+import tictactoe.data.GameRepository;
 
 @Controller
 public class HomeController {
-    private final AccountRepository accRepo;
+  private final AccountRepository accRepo;
+  private final GameRepository gameRepo;
 
-    // @Value("${JAVA_PATH}")
-    // private String myVariable;
-    @Autowired
-    HomeController(AccountRepository accRepo) {
-        this.accRepo = accRepo;
-    }
+  @Autowired
+  HomeController(AccountRepository accRepo, GameRepository gameRepo) {
+    this.accRepo = accRepo;
+    this.gameRepo = gameRepo;
+  }
 
-    @GetMapping("/")
-    public String login(Model model, HttpSession session) {
+  @Autowired
+  private SimpMessagingTemplate simpMessagingTemplate;
 
-        if (session.getAttribute("account") != null) {
-            return "redirect:/home";
-        }
-        model.addAttribute("account", new Account());
-        model.addAttribute("page", "Login");
-        return "login";
-    }
+  @MessageMapping("/newlogin")
+  @SendTo("/client/new")
+  public ArrayList<Account> newLogin(String id) throws Exception {
+    Thread.sleep(1000); // simulated delay
+    ArrayList<Account> accList = accRepo.findActiveAccount();
+    System.out.println(accList);
+    return accList;
+  }
 
-    @GetMapping("/login")
-    public String loginRe(Model model, HttpSession session) {
+  @MessageMapping("/invite")
+  public void sendSpecific(String id) throws Exception {
+    System.out.println(id);
+    String[] temp = id.split(" ");
+    simpMessagingTemplate.convertAndSend("/client/invite/" + temp[1], temp[0] + " " + temp[2]);
+  }
 
-        if (session.getAttribute("account") != null) {
-            return "redirect:/home";
-        }
-        model.addAttribute("account", new Account());
-        model.addAttribute("page", "Login");
-        return "login";
-    }
+  @MessageMapping("/invite/decline")
+  public void decline(String msg) throws Exception {
+    System.out.println(msg);
+    String[] temp = msg.split(" ");
+    simpMessagingTemplate.convertAndSend("/client/decline/" + temp[0], temp[1]);
+  }
 
-    @GetMapping("/home")
-    public String home(Model model, HttpSession session) {
-        if (session.getAttribute("account") == null) {
-            return "redirect:/";
-        }
-        Account temp = (Account) session.getAttribute("account");
-        accRepo.online(temp.getId());
-        session.removeAttribute("account");
-        session.setAttribute("account", accRepo.findOneAccount(temp.getId()));
-        ArrayList<Account> online = accRepo.findActiveAccount();
-        session.setAttribute("online", online);
-        model.addAttribute("page", "Home");
-        return "home";
-    }
+  @MessageMapping("/invite/accept")
+  public void accept(String msg) throws Exception {
+    System.out.println(msg);
+    String[] temp = msg.split(" ");
 
-    @GetMapping("/logout")
-    public String logOut(Model model, HttpSession session) {
-        Account temp = (Account) session.getAttribute("account");
-        accRepo.offline(temp.getId());
-        session.removeAttribute("account");
-        return "redirect:/";
-    }
+    int gameID = (int) gameRepo.count() + 1;
+    gameRepo.addNew(gameID, Integer.parseInt(temp[0]), Integer.parseInt(temp[1]));
 
-    @PostMapping
-    public String checkLogin(Account acc, Model model, HttpSession session) {
-
-        ArrayList<Account> accList = accRepo.findAccount(acc.getUsername(), acc.getPassword());
-        if (accList.size() == 1) {
-            session.setAttribute("account", accList.get(0));
-            return "redirect:/home";
-        } else {
-            model.addAttribute("page", "Login");
-            model.addAttribute("msg", "Wrong username or password!");
-            return "login";
-        }
-    }
+    simpMessagingTemplate.convertAndSend("/client/accept/" + temp[0], gameID);
+    simpMessagingTemplate.convertAndSend("/client/accept/" + temp[1], gameID);
+  }
 }
