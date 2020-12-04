@@ -50,7 +50,19 @@
         </div>
       </div>
       <div class="col-7">
+        <button class="btn btn-success" onclick="loadLdb()">SHOW LEADERBOARD</button>
+        <table class="table table-striped">
+              <thead>
+                <tr>
+                  <th>ID</th>
+                  <th>Name</th>
+                  <th>Point</th>
+                </tr>
+              </thead>
+              <tbody id="ldb">
+              </tbody>
 
+            </table>
       </div>
     </div>
   </div>
@@ -77,6 +89,9 @@
       });
       stompClient.subscribe('/client/accept/' + id, function (msgOut) {
         enterGame(msgOut.body);
+      });
+      stompClient.subscribe('/client/ldb/' + id, function (msgOut) {
+        displayLdb(msgOut.body);
       });
       newLogin();
     });
@@ -160,6 +175,21 @@
     document.getElementById('invite__accept').setAttribute("onclick", `inviteAccept('${temp[0]}', ${id})`);
     document.getElementById('invite__decline').setAttribute("onclick", `inviteDecline(${temp[0]}, '${name}')`);
     document.getElementById("invi__name").innerHTML = temp[1];
+  }
+
+  function loadLdb(){
+    let id = /*[[${session.account.id}]]*/ ;
+    stompClient.send("/app/ldb/basic", {}, id);
+  }
+
+  function displayLdb(ldb){
+    let accList = JSON.parse(ldb).ldb;
+    document.getElementById("ldb").innerHTML = ' ';
+    for (i in accList) {
+        $("#ldb").append(
+          `<tr><td>${accList[i].id}</td><td>${accList[i].name}</td><td>${accList[i].point}</td></tr>`
+        );
+      }
   }
 </script>
 

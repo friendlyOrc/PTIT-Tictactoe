@@ -23,6 +23,9 @@ public interface AccountRepository extends CrudRepository<Account, Long> {
     @Query(value = "SELECT * FROM `account` WHERE status > 0", nativeQuery = true)
     ArrayList<Account> findActiveAccount();
 
+    @Query(value = "SELECT * FROM `account` ORDER BY point DESC", nativeQuery = true)
+    ArrayList<Account> ldbBasic();
+
     @Transactional
     @Modifying
     @Query(value = "UPDATE `account` SET status = 1 WHERE id = ?1", nativeQuery = true)

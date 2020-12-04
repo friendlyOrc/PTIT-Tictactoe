@@ -15,6 +15,7 @@ import org.springframework.stereotype.Controller;
 import org.springframework.web.util.HtmlUtils;
 
 import tictactoe.Account;
+import tictactoe.Leaderboard;
 import tictactoe.data.AccountRepository;
 import tictactoe.data.GameRepository;
 
@@ -65,5 +66,14 @@ public class HomeController {
 
     simpMessagingTemplate.convertAndSend("/client/accept/" + temp[0], gameID);
     simpMessagingTemplate.convertAndSend("/client/accept/" + temp[1], gameID);
+  }
+
+  @MessageMapping("/ldb/basic")
+  public void loadLdb(String id) throws Exception {
+
+    Leaderboard ldb = new Leaderboard();
+    ldb.setLdb(accRepo.ldbBasic());
+
+    simpMessagingTemplate.convertAndSend("/client/ldb/" + id, ldb);
   }
 }
