@@ -94,13 +94,16 @@ public class GameController {
             if (win == 1) {
                 simpMessagingTemplate.convertAndSend("/client/result/" + temp[0], 2);
                 accRepo.win(game.getAcc2().getId());
+                gameRepo.result(2, Integer.parseInt(temp[0]));
             } else if (win == 2) {
                 simpMessagingTemplate.convertAndSend("/client/result/" + temp[0], 1);
                 accRepo.win(game.getAcc1().getId());
+                gameRepo.result(1, Integer.parseInt(temp[0]));
             } else if (win == 0) {
                 simpMessagingTemplate.convertAndSend("/client/result/" + temp[0], -1);
                 accRepo.draw(game.getAcc1().getId());
                 accRepo.draw(game.getAcc2().getId());
+                gameRepo.result(0, Integer.parseInt(temp[0]));
             }
         }
     }
@@ -114,9 +117,11 @@ public class GameController {
         if (id == game.getAcc1().getId()) {
             simpMessagingTemplate.convertAndSend("/client/result/" + temp[0], 2);
             accRepo.win(game.getAcc2().getId());
+            gameRepo.result(2, Integer.parseInt(temp[0]));
         } else {
             simpMessagingTemplate.convertAndSend("/client/result/" + temp[0], 1);
             accRepo.win(game.getAcc1().getId());
+            gameRepo.result(1, Integer.parseInt(temp[0]));
         }
 
     }

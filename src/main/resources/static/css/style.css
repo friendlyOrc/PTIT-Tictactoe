@@ -69,6 +69,10 @@
     height: 100%;
     outline: none;
     border: none;
+    font-size: 5vw;
+}
+.board button:disabled{
+    color: #000;
 }
 .accept{
     text-align: center;

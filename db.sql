@@ -1,4 +1,4 @@
--- drop database tictactoe; 
+drop database tictactoe; 
 CREATE DATABASE tictactoe CHARACTER SET utf8 COLLATE utf8_general_ci;
 use tictactoe;
 create table if not exists `account`(
@@ -26,3 +26,4 @@ create table if not exists `move`(
 	foreign  key (gameID) references `game`(gameID)
 );
 insert into `account`(`username`, `password`, `name`, `point`) values('player1', '123456', 'Kien', 0);
+select * from game;
